@@ -9,7 +9,7 @@ import (
 func WakeUp() {
 	conf := config.Get()
 
-	bot, err := tgbotapi.NewBotAPI(conf.Api)
+	bot, err := tgbotapi.NewBotAPI(conf.ApiToken)
 	if err != nil {
 		log.Panic(err)
 	}
