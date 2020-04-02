@@ -1,9 +1,10 @@
 package telegramBot
 
 import (
-	"github.com/mohsentm/telegram-bot/config"
 	"log"
-	"github.com/go-telegram-bot-api/telegram-bot-api"
+
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"github.com/mohsentm/telegram-bot/config"
 )
 
 func WakeUp() {
@@ -27,12 +28,33 @@ func WakeUp() {
 		if update.Message == nil { // ignore any non-Message Updates
 			continue
 		}
-
-		log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
-
-		msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-		msg.ReplyToMessageID = update.Message.MessageID
-
-		bot.Send(msg)
+		go parseUpdate(bot, update)
 	}
+
+}
+func parseUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	switch {
+	case update.Message.Audio != nil:
+		shareAudio(bot, update)
+	case update.Message.Text != "":
+		replyMessage(bot, update)
+	}
+}
+
+func shareAudio(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+
+	msg := tgbotapi.NewAudioShare(update.Message.Chat.ID, update.Message.Audio.FileID)
+	msg.ReplyToMessageID = update.Message.MessageID
+	msg.Caption = update.Message.Caption
+	bot.Send(msg)
+}
+
+func replyMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
+
+	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+	msg.ReplyToMessageID = update.Message.MessageID
+
+	bot.Send(msg)
 }
