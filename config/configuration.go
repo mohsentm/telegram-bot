@@ -1,9 +1,11 @@
 package config
 
 type Config struct {
-	ApiToken string
+	ApiToken         string
+	ElasticSearchURL string
 }
 
 var defaultConfig = Config{
-	ApiToken: "BotAPIToken",
+	ApiToken:         "BotAPIToken",
+	ElasticSearchURL: "http://elasticsearch:9200",
 }

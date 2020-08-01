@@ -1,11 +1,12 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 func Init() {
@@ -16,7 +17,8 @@ func Init() {
 
 func Get() *Config {
 	return &Config{
-		ApiToken: getEnv("API_TOKEN", defaultConfig.ApiToken),
+		ApiToken:         getEnv("API_TOKEN", defaultConfig.ApiToken),
+		ElasticSearchURL: getEnv("ELASTICSEARCH_URL", defaultConfig.ElasticSearchURL),
 	}
 }
 

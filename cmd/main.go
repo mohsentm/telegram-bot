@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/mohsentm/telegram-bot/config"
-	"github.com/mohsentm/telegram-bot/internal/telegramBot"
+	telegramBot "github.com/mohsentm/telegram-bot/internal/telegrambot"
 )
 
 func init() {

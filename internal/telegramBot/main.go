@@ -1,8 +1,9 @@
-package telegramBot
+package telegrambot
 
 import (
 	"log"
 
+	"github.com/elastic/go-elasticsearch/v7"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mohsentm/telegram-bot/config"
 )
@@ -10,10 +11,21 @@ import (
 func WakeUp() {
 	conf := config.Get()
 
+	es, err := elasticsearch.NewDefaultClient()
+	if err != nil {
+		log.Fatalf("Error creating the client: %s", err)
+	}
+
 	bot, err := tgbotapi.NewBotAPI(conf.ApiToken)
 	if err != nil {
 		log.Panic(err)
 	}
+	res, err := es.Info()
+	if err != nil {
+		log.Fatalf("Error getting response: %s", err)
+	}
+
+	log.Println(res)
 
 	bot.Debug = true
 
@@ -30,8 +42,8 @@ func WakeUp() {
 		}
 		go parseUpdate(bot, update)
 	}
-
 }
+
 func parseUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	switch {
 	case update.Message.Audio != nil:
