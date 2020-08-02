@@ -1,5 +1,4 @@
-// package elastic-service
-package main
+package elasticservice
 
 import (
 	"context"
@@ -11,23 +10,21 @@ import (
 	"github.com/olivere/elastic"
 )
 
-func main() {
+type Service struct {
+	Client *elastic.Client
+}
 
-	client := InitClient()
-	// Ping the Elasticsearch server to get e.g. the version number
-	info, code, err := client.Ping("http://elasticsearch:9200").Do(context.Background())
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-	fmt.Printf("Elasticsearch returned with code %d and version %s\n", code, info.Version.Number)
-
+type Data struct {
+	User     string `json:"user"`
+	Message  string `json:"message"`
+	Retweets string `json:"retweets"`
 }
 
 /*
- * init new client
+ * InitClient efwef
+ * @return *elastic.Client
  */
-func InitClient() *elastic.Client {
+func InitClient() *Service {
 	conf := config.Get()
 
 	errorlog := log.New(os.Stdout, "APP ", log.LstdFlags)
@@ -44,6 +41,41 @@ func InitClient() *elastic.Client {
 		// Handle error
 		panic(err)
 	}
+	return &Service{Client: client}
+}
 
-	return client
+func (service *Service) Ping() {
+	info, code, err := service.Client.Ping("http://elasticsearch:9200").Do(context.Background())
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+	fmt.Printf("Elasticsearch returned with code %d and version %s\n", code, info.Version.Number)
+}
+
+func (service *Service) IndexMessage(indexName string, bodyData interface{}) (*elastic.IndexResponse, error) {
+	return service.Client.Index().
+		Type("_doc").
+		Index(indexName).
+		BodyJson(bodyData).
+		Do(context.Background())
+}
+
+func (service *Service) CheckOrCreateIndex(indexName string) {
+	exists, err := service.Client.IndexExists(indexName).Do(context.Background())
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+
+	if !exists {
+		createIndex, err := service.Client.CreateIndex(indexName).Body(GetMapping()).Do(context.Background())
+		if err != nil {
+			// Handle error
+			panic(err)
+		}
+		if !createIndex.Acknowledged {
+			// Not acknowledged
+		}
+	}
 }
