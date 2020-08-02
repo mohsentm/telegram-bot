@@ -33,7 +33,7 @@ var Twitter = `
 }
 `
 
-var Audio = `
+var AudioMapping = `
 {
 	"settings":{
 		"number_of_shards":1,
@@ -41,7 +41,7 @@ var Audio = `
 	},
 	"mappings":{
 		"properties":{
-			"fileID":{
+			"file_id":{
 				"type":"keyword"
 			},
 			"title":{
@@ -49,11 +49,23 @@ var Audio = `
 				"store": true,
 				"fielddata": true
 			},
+			"caption":{
+				"type":"text",
+				"store": true,
+				"fielddata": true
+			}
 		}
 	}
 }
 `
 
-func GetMapping() string {
-	return Twitter
+func GetMapping(indexName string) string {
+	switch indexName {
+	case "twitter":
+		return Twitter
+	case "telegram":
+		return AudioMapping
+	default:
+		return ""
+	}
 }

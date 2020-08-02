@@ -11,7 +11,8 @@ import (
 )
 
 type Service struct {
-	Client *elastic.Client
+	Client    *elastic.Client
+	IndexName string
 }
 
 type Data struct {
@@ -20,11 +21,17 @@ type Data struct {
 	Retweets string `json:"retweets"`
 }
 
+type AudioData struct {
+	FileID  string `json:"file_id"`
+	Title   string `json:"title"`
+	Caption string `json:"caption"`
+}
+
 /*
  * InitClient efwef
  * @return *elastic.Client
  */
-func InitClient() *Service {
+func InitClient(indexName string) *Service {
 	conf := config.Get()
 
 	errorlog := log.New(os.Stdout, "APP ", log.LstdFlags)
@@ -41,7 +48,7 @@ func InitClient() *Service {
 		// Handle error
 		panic(err)
 	}
-	return &Service{Client: client}
+	return &Service{Client: client, IndexName: indexName}
 }
 
 func (service *Service) Ping() {
@@ -53,23 +60,23 @@ func (service *Service) Ping() {
 	fmt.Printf("Elasticsearch returned with code %d and version %s\n", code, info.Version.Number)
 }
 
-func (service *Service) IndexMessage(indexName string, bodyData interface{}) (*elastic.IndexResponse, error) {
+func (service *Service) IndexMessage(bodyData interface{}) (*elastic.IndexResponse, error) {
 	return service.Client.Index().
 		Type("_doc").
-		Index(indexName).
+		Index(service.IndexName).
 		BodyJson(bodyData).
 		Do(context.Background())
 }
 
-func (service *Service) CheckOrCreateIndex(indexName string) {
-	exists, err := service.Client.IndexExists(indexName).Do(context.Background())
+func (service *Service) CheckOrCreateIndex() {
+	exists, err := service.Client.IndexExists(service.IndexName).Do(context.Background())
 	if err != nil {
 		// Handle error
 		panic(err)
 	}
 
 	if !exists {
-		createIndex, err := service.Client.CreateIndex(indexName).Body(GetMapping()).Do(context.Background())
+		createIndex, err := service.Client.CreateIndex(service.IndexName).Body(GetMapping(service.IndexName)).Do(context.Background())
 		if err != nil {
 			// Handle error
 			panic(err)
@@ -78,4 +85,15 @@ func (service *Service) CheckOrCreateIndex(indexName string) {
 			// Not acknowledged
 		}
 	}
+}
+
+func (service *Service) Search(termQuery elastic.Query) (*elastic.SearchResult, error) {
+	return service.Client.Search().
+		RestTotalHitsAsInt(true).
+		Index(service.IndexName). // search in index "twitter"
+		Query(termQuery).         // specify the query
+		// Sort("user", true).       // sort by "user" field, ascending
+		// From(0).Size(10).        // take documents 0-9
+		// Pretty(true).            // pretty print request and response JSON
+		Do(context.Background()) // execute
 }

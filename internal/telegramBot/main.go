@@ -1,12 +1,18 @@
 package telegrambot
 
 import (
+	"fmt"
 	"log"
+	"reflect"
 
 	"github.com/elastic/go-elasticsearch/v7"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/mohsentm/telegram-bot/config"
+	elasticSerive "github.com/mohsentm/telegram-bot/internal/elasticservice"
+	"github.com/olivere/elastic"
 )
+
+var indexName = "telegram"
 
 func WakeUp() {
 	conf := config.Get()
@@ -54,19 +60,67 @@ func parseUpdate(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 }
 
 func shareAudio(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+
+	service := elasticSerive.InitClient(indexName)
+	service.CheckOrCreateIndex()
+	audioData := elasticSerive.AudioData{
+		FileID:  update.Message.Audio.FileID,
+		Title:   update.Message.Audio.Title,
+		Caption: update.Message.Caption,
+	}
+	_, err := service.IndexMessage(audioData)
+	if err != nil {
+		// Handle error
+		log.Fatalf("Error getting response: %s", err)
+	}
+
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-	msg := tgbotapi.NewAudioShare(update.Message.Chat.ID, update.Message.Audio.FileID)
-	msg.ReplyToMessageID = update.Message.MessageID
-	msg.Caption = update.Message.Caption
-	bot.Send(msg)
+	log.Printf("file name %s", update.Message.Caption)
+	// msg := tgbotapi.NewAudioShare(update.Message.Chat.ID, update.Message.Audio.FileID)
+	// // msg.ReplyToMessageID = update.Message.MessageID
+	// msg.Caption = update.Message.Caption
+	// bot.Send(msg)
 }
 
 func replyMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
+
 	log.Printf("[%s] %s", update.Message.From.UserName, update.Message.Text)
 
-	msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
-	msg.ReplyToMessageID = update.Message.MessageID
+	service := elasticSerive.InitClient(indexName)
 
-	bot.Send(msg)
+	termQuery := elastic.NewTermQuery("title", update.Message.Text)
+
+	searchResult, err := service.Search(termQuery)
+	if err != nil {
+		// Handle error
+		log.Fatalf("Error getting result: %s", err)
+	}
+
+	// fmt.Printf("Query took %d milliseconds\n", searchResult.TookInMillis)
+
+	// TotalHits is another convenience function that works even when something goes wrong.
+	fmt.Printf("Found a total of %d tweets\n", searchResult.TotalHits())
+
+	// 	// Each is a convenience function that iterates over hits in a search result.
+	// 	// It makes sure you don't need to check for nil values in the response.
+	// 	// However, it ignores errors in serialization. If you want full control
+	// 	// over iterating the hits, see below.
+	var ttyp elasticSerive.AudioData
+	for _, files := range searchResult.Each(reflect.TypeOf(ttyp)) {
+		file := files.(elasticSerive.AudioData)
+
+		fmt.Printf("Tweet by %s: %s\n", file.FileID, file.Caption)
+
+		msg := tgbotapi.NewAudioShare(update.Message.Chat.ID, file.FileID)
+		// msg.ReplyToMessageID = update.Message.MessageID
+		msg.Caption = file.Caption
+		bot.Send(msg)
+
+	}
+
+	// msg := tgbotapi.NewMessage(update.Message.Chat.ID, update.Message.Text)
+	// 	msg.ReplyToMessageID = update.Message.MessageID
+	// 	bot.Send(msg)
+
 }
