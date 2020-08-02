@@ -44,6 +44,11 @@ var AudioMapping = `
 			"file_id":{
 				"type":"keyword"
 			},
+			"performer":{
+				"type":"text",
+				"store": true,
+				"fielddata": true
+			},
 			"title":{
 				"type":"text",
 				"store": true,

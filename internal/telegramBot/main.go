@@ -64,9 +64,10 @@ func shareAudio(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 	service := elasticSerive.InitClient(indexName)
 	service.CheckOrCreateIndex()
 	audioData := elasticSerive.AudioData{
-		FileID:  update.Message.Audio.FileID,
-		Title:   update.Message.Audio.Title,
-		Caption: update.Message.Caption,
+		Performer: update.Message.Audio.Performer,
+		FileID:    update.Message.Audio.FileID,
+		Title:     update.Message.Audio.Title,
+		Caption:   update.Message.Caption,
 	}
 	_, err := service.IndexMessage(audioData)
 	if err != nil {
@@ -89,7 +90,7 @@ func replyMessage(bot *tgbotapi.BotAPI, update tgbotapi.Update) {
 
 	service := elasticSerive.InitClient(indexName)
 
-	termQuery := elastic.NewTermQuery("title", update.Message.Text)
+	termQuery := elastic.NewMultiMatchQuery(update.Message.Text, "title", "caption", "performer")
 
 	searchResult, err := service.Search(termQuery)
 	if err != nil {

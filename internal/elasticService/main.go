@@ -22,9 +22,10 @@ type Data struct {
 }
 
 type AudioData struct {
-	FileID  string `json:"file_id"`
-	Title   string `json:"title"`
-	Caption string `json:"caption"`
+	FileID    string `json:"file_id"`
+	Performer string `json:"performer"`
+	Title     string `json:"title"`
+	Caption   string `json:"caption"`
 }
 
 /*
