@@ -19,6 +19,8 @@ jobs:
 
       # step 3: install dependencies
       - name: Install all Go dependencies
+        env:
+          GOROOT: ""
         run: go get
 
       # - name: Upload Coverage report to CodeCov
